@@ -36,7 +36,7 @@ resource "aws_security_group" "ec2_sg" {
 
   ingress {
     from_port   = 22
-    to_port     = 22
+   _port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -86,11 +86,9 @@ resource "aws_instance" "ec2" {
               systemctl enable docker
               EOF
 
-  tags = {
-    Name = "openproject-devlake-ec2"
+ lake-ec2"
   }
-}
-
+  
 
 resource "aws_lb" "alb" {
   name               = "openproject-devlake-alb"
@@ -146,12 +144,12 @@ resource "aws_lb_listener" "http" {
 }
 
 resource "aws_lb_listener_rule" "openproject_rule" {
-  listener_arn = aws_lb_listener.front_end.arn
+  listener_arn = aws_lb_listener.http.arn
   priority     = 100
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.openproject.arn
+    target_group_arn = aws_lb_target_group.openproject_tg.arn
   }
 
   condition {
@@ -162,24 +160,8 @@ resource "aws_lb_listener_rule" "openproject_rule" {
 }
 
 resource "aws_lb_listener_rule" "devlake_rule" {
-  listener_arn = aws_lb_listener.front_end.arn
-  priority     = 101
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.devlake.arn
-  }
-
-  condition {
-    path_pattern {
-      values = ["/devlake/*"]
-    }
-  }
-}
-
-
-resource "aws_lb_listener_rule" "devlake_rule" {
   listener_arn = aws_lb_listener.http.arn
+  priority     = 101
 
   action {
     type             = "forward"
@@ -187,7 +169,8 @@ resource "aws_lb_listener_rule" "devlake_rule" {
   }
 
   condition {
-    field  = "path-pattern"
-    values = ["/devlake/*"]
+    path_pattern {
+      values = ["/devlake/*"]
+    }
   }
 }
