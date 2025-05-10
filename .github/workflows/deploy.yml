@@ -1,7 +1,7 @@
 name: Terraform CI/CD Pipeline
 
 on:
-  push:
+  workflow_dispatch::
     paths:
       - 'terraform/**'
       - 'docker/**'
@@ -30,6 +30,12 @@ jobs:
       uses: hashicorp/setup-terraform@v2
       with:
         terraform_version: 1.6.6
+    
+    - name: Generate SSH key pair
+      run: |
+        mkdir -p terraform
+        ssh-keygen -t rsa -b 4096 -f terraform/private_key.pem -N ""
+        echo "EC2_PRIVATE_KEY=$(cat terraform/private_key.pem | base64 -w 0)" >> $GITHUB_ENV
 
     - name: Terraform Format Check
       run: terraform fmt -recursive
@@ -59,8 +65,14 @@ jobs:
     - name: Terraform Apply (main branch only)
       if: github.ref == 'refs/heads/main'
       id: apply
-      run: terraform apply -auto-approve
+      run: terraform apply -auto-approve -no-color
       working-directory: terraform
+
+    - name: Save EC2 private key
+      if: github.ref == 'refs/heads/main'
+      run: |
+        echo "$EC2_PRIVATE_KEY" | base64 -d > terraform/private_key.pem
+        chmod 600 terraform/private_key.pem
 
     - name: Get EC2 IP and Private Key from Terraform Output
       if: github.ref == 'refs/heads/main'
