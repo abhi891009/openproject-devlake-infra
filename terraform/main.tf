@@ -32,6 +32,29 @@ resource "aws_subnet" "public_2" {
   map_public_ip_on_launch = true
 }
 
+resource "aws_internet_gateway" "igw" {
+  vpc_id = aws_vpc.main.id
+}
+
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw.id
+  }
+}
+
+resource "aws_route_table_association" "public_1" {
+  subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table_association" "public_2" {
+  subnet_id      = aws_subnet.public_2.id
+  route_table_id = aws_route_table.public.id
+}
+
 
 resource "aws_security_group" "alb_sg" {
   vpc_id = aws_vpc.main.id
@@ -89,7 +112,7 @@ resource "tls_private_key" "ssh_key" {
 }
 
 resource "aws_key_pair" "deployer" {
-  key_name   = "deployer-key"
+  key_name   = "deployer-key1"
   public_key = tls_private_key.ssh_key.public_key_openssh
 }
 
@@ -118,7 +141,7 @@ resource "aws_lb" "alb" {
 }
 
 resource "aws_lb_target_group" "openproject_tg" {
-  name     = "openproject-tg"
+  name     = "openproject-tg1"
   port     = 80
   protocol = "HTTP"
   vpc_id   = aws_vpc.main.id
@@ -133,7 +156,7 @@ resource "aws_lb_target_group" "openproject_tg" {
 }
 
 resource "aws_lb_target_group" "devlake_tg" {
-  name     = "devlake-tg"
+  name     = "devlake-tg1"
   port     = 3000
   protocol = "HTTP"
   vpc_id   = aws_vpc.main.id
