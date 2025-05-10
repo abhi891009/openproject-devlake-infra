@@ -1,6 +1,7 @@
-provider "aws" {
-  region = var.aws_region
-}
+#provider "aws" {
+ # region = var.aws_region
+#}
+
 
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
@@ -72,11 +73,12 @@ resource "aws_key_pair" "deployer" {
   public_key = tls_private_key.ssh_key.public_key_openssh
 }
 
-resource             = var.ami_id
-  instance_type   = var.instance_type
-  subnet_id       = aws_subnet.public.id
+resource "aws_instance" "ec2" {
+  ami           = var.ami_id
+  instance_type = var.instance_type
+  subnet_id     = aws_subnet.public.id
   security_groups = [aws_security_group.ec2_sg.name]
-  key_name        = aws_key_pair.deployer.key_name
+  key_name      = aws_key_pair.deployer.key_name
 
   user_data = <<-EOF
               #!/bin/bash
@@ -88,6 +90,7 @@ resource             = var.ami_id
     Name = "openproject-devlake-ec2"
   }
 }
+
 
 resource "aws_lb" "alb" {
   name               = "openproject-devlake-alb"
