@@ -46,7 +46,7 @@ jobs:
     - name: Install tflint
       run: |
         curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
-        sudo mv tflint /usr/local/bin/
+        #sudo mv tflint /usr/local/bin/
 
     - name: Run tflint
       run: tflint
