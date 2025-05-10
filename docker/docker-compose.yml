@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  openproject:
+    image: openproject/community:latest
+    container_name: openproject
+    ports:
+      - "8080:80"
+    environment:
+      - SECRET_KEY_BASE=supersecretkey
+    restart: always
+
+  devlake:
+    image: apache/devlake:latest
+    container_name: devlake
+    ports:
+      - "8081:3000"
+    restart: always
+
+  nginx:
+    image: nginx:latest
+    container_name: reverse-proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - openproject
+      - devlake
+    restart: always

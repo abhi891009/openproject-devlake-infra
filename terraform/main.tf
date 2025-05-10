@@ -1,0 +1,168 @@
+provider "aws" {
+  region = var.aws_region
+}
+
+resource "aws_vpc" "main" {
+  cidr_block = "10.0.0.0/16"
+}
+
+resource "aws_subnet" "public" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.1.0/24"
+  map_public_ip_on_launch = true
+}
+
+resource "aws_security_group" "alb_sg" {
+  vpc_id = aws_vpc.main.id
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_security_group" "ec2_sg" {
+  vpc_id = aws_vpc.main.id
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress{
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_instance" "ec2" {
+  ami           = var.ami_id
+  instance_type = var.instance_type
+  subnet_id     = aws_subnet.public.id
+  security_groups = [aws_security_group.ec2_sg.name]
+  key_name = aws_key_pair.deployer.deployer-key
+
+  user_data = <<-EOF
+              #              systemctl enable docker
+              usermod -aG docker ubuntu
+              EOF
+
+  tags = {
+    Name = "openproject-devlake-ec2"
+  }
+}
+
+resource "aws_lb" "alb" {
+  name               = "openproject-devlake-alb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb_sg.id]
+ openproject_tg" {
+  name     = "openproject-tg"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.main.id
+
+  health_check {
+    path                = "/openproject/"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+  }
+}
+}
+resource "aws_lb_target_group" "devlake_tg" {
+  name     = "devlake-tg"
+  port     = 3000
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.main.id
+
+  health_check {
+    path                = "/devlake/"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+  }
+}
+
+resource "aws_lb_listener" "http" {
+  load_balancer_arn = aws_lb.alb.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type = "fixed-response"
+    fixed_response {
+      content_type = "text/plain"
+      message_body = "Not Found"
+      status_code  = "404"
+    }
+  }
+}
+
+resource "aws_lb_listener_rule" "openproject_rule" {
+  listener_arn = aws_lb_listener.http.arn
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.openproject_tg.arn
+  }
+
+  condition {
+    field  = "path-pattern"
+    values = ["/openproject/*"]
+  }
+}
+
+resource "aws_lb_listener_rule" "devlake_rule" {
+  listener_arn = aws_lb_listener.http.arn
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.devlake_tg.arn
+  }
+
+  condition {
+    field  = "path-pattern"
+    values = ["/devlake/*"]
+  }
+}
+
+resource "tls_private_key" "ssh_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "aws_key_pair" "deployer" {
+  key_name   = "deployer-key"
+  public_key = tls_private_key.ssh_key.public_key_openssh
+}
+

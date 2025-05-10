@@ -1,0 +1,88 @@
+name: Terraform CI/CD Pipeline
+
+on:
+  push:
+    paths:
+      - 'terraform/**'
+      - 'docker/**'
+      - '.github/workflows/**'
+  pull_request:
+    paths:
+      - 'terraform/**'
+
+jobs:
+  terraform:
+    name: Terraform Workflow
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.6.6
+
+    - name: Terraform Format Check
+      run: terraform fmt -check
+      working-directory: terraform
+
+    - name: Terraform Init
+      run: terraform init
+      working-directory: terraform
+
+    - name: Terraform Validate
+      run: terraform validate
+      working-directory: terraform
+
+    - name: Install tflint
+      run: |
+        curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+        sudo mv tflint /usr/local/bin/
+
+    - name: Run tflint
+      run: tflint
+      working-directory: terraform
+
+    - name: Terraform Plan
+      run: terraform plan
+      working-directory: terraform
+
+    - name: Terraform Apply (main branch only)
+      if: github.ref == 'refs/heads/main'
+      id: apply
+      run: terraform apply -auto-approve
+      working-directory: terraform
+
+    - name: Get EC2 IP and Private Key from Terraform Output
+      if: github.ref == 'refs/heads/main'
+      id: ec2info
+      run: |
+        echo "EC2_IP=$(terraform output -raw ec2_public_ip)" >> $GITHUB_ENV
+        echo "$(terraform output -raw private_key_pem)" > terraform/private_key.pem
+        chmod 600 terraform/private_key.pem
+      working-directory: terraform
+
+    - name: Deploy Docker Compose on EC2
+      if: github.ref == 'refs/heads/main'
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ env.EC2_IP }}
+        username: ubuntu
+        key_path: terraform/private_key.pem
+        script: |
+          sudo apt-get update -y
+          sudo apt-get install -y docker.io docker-compose
+          mkdir -p ~/openproject-devlake
+          cd ~/openproject-devlake
+          echo "${{ secrets.DOCKER_COMPOSE_YML }}" > docker-compose.yml
+          echo "${{ secrets.NGINX_CONF }}" > nginx.conf
+          docker-compose up -d
