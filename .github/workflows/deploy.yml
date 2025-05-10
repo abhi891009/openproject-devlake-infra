@@ -68,19 +68,12 @@ jobs:
       run: terraform apply -auto-approve -no-color
       working-directory: terraform
 
-    - name: Save EC2 private key
+    - name: Save EC2 private key and get EC2 IP
       if: github.ref == 'refs/heads/main'
       run: |
         echo "$EC2_PRIVATE_KEY" | base64 -d > terraform/private_key.pem
         chmod 600 terraform/private_key.pem
-
-    - name: Get EC2 IP and Private Key from Terraform Output
-      if: github.ref == 'refs/heads/main'
-      id: ec2info
-      run: |
         echo "EC2_IP=$(terraform output -raw ec2_public_ip)" >> $GITHUB_ENV
-        echo "$(terraform output -raw private_key_pem)" > terraform/private_key.pem
-        chmod 600 terraform/private_key.pem
       working-directory: terraform
 
     - name: Deploy Docker Compose on EC2
