@@ -51,7 +51,7 @@ resource "aws_security_group" "ec2_sg" {
   }
 
   egress {
-   _blocks = ["0.0.0.0/0"]
+   cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
