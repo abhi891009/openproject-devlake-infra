@@ -1,8 +1,3 @@
-#provider "aws" {
- # region = var.aws_region
-#}
-
-
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
 }
@@ -36,7 +31,7 @@ resource "aws_security_group" "ec2_sg" {
 
   ingress {
     from_port   = 22
-   _port     = 22
+    to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -56,10 +51,7 @@ resource "aws_security_group" "ec2_sg" {
   }
 
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+   _blocks = ["0.0.0.0/0"]
   }
 }
 
@@ -81,14 +73,13 @@ resource "aws_instance" "ec2" {
   key_name      = aws_key_pair.deployer.key_name
 
   user_data = <<-EOF
-              #!/bin/bash
-              usermod -aG docker ubuntu
-              systemctl enable docker
+              enable docker
               EOF
 
- lake-ec2"
+  tags = {
+    Name = "openproject-devlake-ec2"
   }
-  
+}
 
 resource "aws_lb" "alb" {
   name               = "openproject-devlake-alb"
