@@ -46,7 +46,8 @@ resource "aws_security_group" "ec2_sg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  ingress{
+
+  ingress {
     from_port   = 3000
     to_port     = 3000
     protocol    = "tcp"
@@ -61,16 +62,26 @@ resource "aws_security_group" "ec2_sg" {
   }
 }
 
-resource "aws_instance" "ec2" {
-  ami           = var.ami_id
-  instance_type = var.instance_type
-  subnet_id     = aws_subnet.public.id
+resource "tls_private_key" "ssh_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "aws_key_pair" "deployer" {
+  key_name   = "deployer-key"
+  public_key = tls_private_key.ssh_key.public_key_openssh
+}
+
+resource             = var.ami_id
+  instance_type   = var.instance_type
+  subnet_id       = aws_subnet.public.id
   security_groups = [aws_security_group.ec2_sg.name]
-  key_name = aws_key_pair.deployer.deployer-key
+  key_name        = aws_key_pair.deployer.key_name
 
   user_data = <<-EOF
-              #              systemctl enable docker
+              #!/bin/bash
               usermod -aG docker ubuntu
+              systemctl enable docker
               EOF
 
   tags = {
@@ -83,7 +94,10 @@ resource "aws_lb" "alb" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
- openproject_tg" {
+  subnets            = [aws_subnet.public.id]
+}
+
+resource "aws_lb_target_group" "openproject_tg" {
   name     = "openproject-tg"
   port     = 80
   protocol = "HTTP"
@@ -97,7 +111,7 @@ resource "aws_lb" "alb" {
     unhealthy_threshold = 2
   }
 }
-}
+
 resource "aws_lb_target_group" "devlake_tg" {
   name     = "devlake-tg"
   port     = 3000
@@ -115,7 +129,7 @@ resource "aws_lb_target_group" "devlake_tg" {
 
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.alb.arn
-  port              = "80"
+  port              = 80
   protocol          = "HTTP"
 
   default_action {
@@ -155,14 +169,3 @@ resource "aws_lb_listener_rule" "devlake_rule" {
     values = ["/devlake/*"]
   }
 }
-
-resource "tls_private_key" "ssh_key" {
-  algorithm = "RSA"
-  rsa_bits  = 4096
-}
-
-resource "aws_key_pair" "deployer" {
-  key_name   = "deployer-key"
-  public_key = tls_private_key.ssh_key.public_key_openssh
-}
-
