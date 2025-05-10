@@ -146,18 +146,37 @@ resource "aws_lb_listener" "http" {
 }
 
 resource "aws_lb_listener_rule" "openproject_rule" {
-  listener_arn = aws_lb_listener.http.arn
+  listener_arn = aws_lb_listener.front_end.arn
+  priority     = 100
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.openproject_tg.arn
+    target_group_arn = aws_lb_target_group.openproject.arn
   }
 
   condition {
-    field  = "path-pattern"
-    values = ["/openproject/*"]
+    path_pattern {
+      values = ["/openproject/*"]
+    }
   }
 }
+
+resource "aws_lb_listener_rule" "devlake_rule" {
+  listener_arn = aws_lb_listener.front_end.arn
+  priority     = 101
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.devlake.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/devlake/*"]
+    }
+  }
+}
+
 
 resource "aws_lb_listener_rule" "devlake_rule" {
   listener_arn = aws_lb_listener.http.arn
