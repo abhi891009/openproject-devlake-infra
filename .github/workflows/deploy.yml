@@ -73,7 +73,7 @@ jobs:
       run: terraform apply -auto-approve -no-color
       working-directory: terraform
 
-    - name: Get EC2 public IP
+    - name: Get EC2 public IP address
       id: tf_outputs
       working-directory: terraform
       run: |
