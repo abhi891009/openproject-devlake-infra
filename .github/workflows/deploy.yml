@@ -19,11 +19,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Configure AWS credentials
+    - name: Configure AWS credentials using OIDC
       uses: aws-actions/configure-aws-credentials@v2
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        role-to-assume: arn:aws:iam::144317819575:role/OIDC_Role12
         aws-region: us-east-1
 
     - name: Setup Terraform
@@ -67,16 +66,7 @@ jobs:
       id: apply
       run: terraform apply -auto-approve -no-color
       working-directory: terraform
-
-    - name: Save EC2 private key and get EC2 IP
-      if: github.ref == 'refs/heads/main'
-      run: |
-        mkdir -p terraform
-        echo "$EC2_PRIVATE_KEY" | base64 -d > terraform/private_key.pem
-        chmod 600 terraform/private_key.pem
-        echo "EC2_IP=$(terraform output -raw ec2_public_ip)" >> $GITHUB_ENV
-      working-directory: terraform
-
+    
     - name: Deploy Docker Compose on EC2
       if: github.ref == 'refs/heads/main'
       uses: appleboy/ssh-action@v1.0.0
