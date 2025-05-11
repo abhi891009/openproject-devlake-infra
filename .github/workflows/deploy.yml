@@ -79,7 +79,7 @@ jobs:
       run: |
         echo "ec2_ip=$(terraform output -raw ec2_public_ip)" >> "$GITHUB_OUTPUT"
 
-    - name: Export EC2 IP to env
+    - name: Export EC2 IP to ENV1
       run: echo "EC2_IP=${{ steps.get_ip.outputs.ec2_ip }}" >> $GITHUB_ENV
     
     - name: Deploy Docker Compose on EC2
