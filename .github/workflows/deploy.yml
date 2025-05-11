@@ -79,8 +79,8 @@ jobs:
       run: |
         echo "ec2_ip=$(terraform output -raw ec2_public_ip)" >> $GITHUB_OUTPUT
 
-    - name: Export EC2 IP to env
-      run: echo "EC2 IP is ${{ steps.tf_outputs.outputs.ec2_ip }}"
+    - name: Export EC2 IP to environment
+      run: echo "EC2_IP=${{ steps.tf_outputs.outputs.ec2_ip }}" >> $GITHUB_ENV
     
     - name: Deploy Docker Compose on EC2
       if: github.ref == 'refs/heads/main'
