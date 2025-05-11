@@ -71,6 +71,7 @@ jobs:
     - name: Save EC2 private key and get EC2 IP
       if: github.ref == 'refs/heads/main'
       run: |
+        mkdir -p terraform
         echo "$EC2_PRIVATE_KEY" | base64 -d > terraform/private_key.pem
         chmod 600 terraform/private_key.pem
         echo "EC2_IP=$(terraform output -raw ec2_public_ip)" >> $GITHUB_ENV
