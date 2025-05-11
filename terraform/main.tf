@@ -112,7 +112,7 @@ resource "tls_private_key" "ssh_key" {
 }
 
 resource "aws_key_pair" "deployer" {
-  key_name   = "deployer-key4"
+  key_name   = "deployer-key"
   public_key = tls_private_key.ssh_key.public_key_openssh
 }
 
@@ -133,7 +133,7 @@ resource "aws_instance" "ec2" {
 }
 
 resource "aws_lb" "alb" {
-  name               = "openproject-devlake-alb3"
+  name               = "openproject-devlake-alb1"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
@@ -141,7 +141,7 @@ resource "aws_lb" "alb" {
 }
 
 resource "aws_lb_target_group" "openproject_tg" {
-  name     = "openproject-tg4"
+  name     = "openproject-tg1"
   port     = 80
   protocol = "HTTP"
   vpc_id   = aws_vpc.main.id
@@ -156,7 +156,7 @@ resource "aws_lb_target_group" "openproject_tg" {
 }
 
 resource "aws_lb_target_group" "devlake_tg" {
-  name     = "devlake-tg4"
+  name     = "devlake-tg1"
   port     = 3000
   protocol = "HTTP"
   vpc_id   = aws_vpc.main.id
