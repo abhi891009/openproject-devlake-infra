@@ -124,8 +124,12 @@ resource "aws_instance" "ec2" {
   key_name      = aws_key_pair.deployer.key_name
 
   user_data = <<-EOF
-              enable docker
-              EOF
+              #!/bin/bash
+              apt-get update -y
+              apt-get install -y docker.io docker-compose
+              systemctl start docker
+              systemctl enable docker
+            EOF
 
   tags = {
     Name = "openproject-devlake-ec2"
@@ -215,4 +219,15 @@ resource "aws_lb_listener_rule" "devlake_rule" {
       values = ["/devlake/*"]
     }
   }
+}
+resource "aws_lb_target_group_attachment" "openproject_attachment" {
+  target_group_arn = aws_lb_target_group.openproject_tg.arn
+  target_id        = aws_instance.ec2.id
+  port             = 80
+}
+
+resource "aws_lb_target_group_attachment" "devlake_attachment" {
+  target_group_arn = aws_lb_target_group.devlake_tg.arn
+  target_id        = aws_instance.ec2.id
+  port             = 3000
 }
