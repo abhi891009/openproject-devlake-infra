@@ -72,15 +72,9 @@ jobs:
       id: apply
       run: terraform apply -auto-approve -no-color
       working-directory: terraform
-
-    - name: Get EC2 public IP address
-      id: tf_outputs
-      working-directory: terraform
-      run: |
-        echo "ec2_ip=$(terraform output -raw ec2_public_ip)" >> $GITHUB_OUTPUT
-
-    - name: Export EC2 IP to environment
-      run: echo "EC2_IP=${{ steps.tf_outputs.outputs.ec2_ip }}" >> $GITHUB_ENV
+    
+    - name: Set static EC2 IP
+      run: echo "EC2_IP=YOUR_ELASTIC_IP_HERE" >> $GITHUB_ENV
     
     - name: Deploy Docker Compose on EC2
       if: github.ref == 'refs/heads/main'

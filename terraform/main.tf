@@ -231,3 +231,14 @@ resource "aws_lb_target_group_attachment" "devlake_attachment" {
   target_id        = aws_instance.ec2.id
   port             = 3000
 }
+
+# Allocate an Elastic IP
+resource "aws_eip" "static_ip" {
+  vpc = true
+}
+
+# Associate the EIP with your EC2 instance
+resource "aws_eip_association" "eip_assoc" {
+  instance_id   = aws_instance.my_instance.id
+  allocation_id = aws_eip.static_ip.id
+}
