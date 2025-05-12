@@ -234,7 +234,7 @@ resource "aws_lb_target_group_attachment" "devlake_attachment" {
 
 # Allocate an Elastic IP
 resource "aws_eip" "static_ip" {
-  vpc = true
+  domain = "vpc"
 }
 
 # Associate the EIP with your EC2 instance
