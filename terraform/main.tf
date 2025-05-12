@@ -239,6 +239,6 @@ resource "aws_eip" "static_ip" {
 
 # Associate the EIP with your EC2 instance
 resource "aws_eip_association" "eip_assoc" {
-  instance_id   = aws_instance.my_instance.id
+  instance_id   = aws_instance.ec2.id
   allocation_id = aws_eip.static_ip.id
 }
