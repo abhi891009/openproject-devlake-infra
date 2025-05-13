@@ -1,4 +1,4 @@
-name: Terraform CI/CD Pipeline
+name: Github Action CI/CD Pipeline
 
 on:
   push:
@@ -74,7 +74,7 @@ jobs:
       working-directory: terraform
     
     - name: Set static EC2 IP
-      run: echo "EC2_IP=YOUR_ELASTIC_IP_HERE" >> $GITHUB_ENV
+      run: echo "EC2_IP=${{ secrets.EC2_IP }}" >> $GITHUB_ENV
     
     - name: Deploy Docker Compose on EC2
       if: github.ref == 'refs/heads/main'
